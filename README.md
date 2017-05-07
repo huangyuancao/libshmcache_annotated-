@@ -17,9 +17,9 @@
 
 #### 1.存储模型
 
-<img src="segment.png"  width="70%" height="70%" alt="还在路上，稍等..."/>
-<img src="ring_queue.png"  width="70%" height="70%" alt="还在路上，稍等..."/>
-<img src="buckets.png" width="70%" height="70%" alt="还在路上，稍等..."/>
+<img src="segment.png"  width="60%" height="60%" alt="还在路上，稍等..."/>
+<img src="ring_queue.png"  width="60%" height="60%" alt="还在路上，稍等..."/>
+<img src="buckets.png" width="60%" height="60%" alt="还在路上，稍等..."/>
 
 
 #### 2.get(key)操作
