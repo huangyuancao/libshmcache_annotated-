@@ -15,49 +15,53 @@
 
 ### 阅读笔记
 
-#### 1.存储模型
+#### 存储模型
 
 <img src="segment.png"  width="60%" height="60%" alt="还在路上，稍等..."/>
-<img src="ring_queue.png"  width="60%" height="60%" alt="还在路上，稍等..."/>
+程序是按segment（默认8M）为单位向OS申请共享内存。初始化时，会分配几个segment，然后将每个segment切分成多个striping_allocator空间（默认1M），由striping_allocator来分配单个的hash entry空间。
+
+hash entry由`struct shm_hash_entry`表示，主要存储hash entry在striping_allocator中的偏移量（准确的说，是基于segment首地址的偏移量）。
+
+所有striping_allocator对象由shmcache_value_allocator_context来管理，它由2个ring queue(`doing`, `done`)分别保存所有空闲的striping_allocator和已分配满的striping_allocator。如下图所示。
+
+segment是按需分配的。在插入时，若当前striping_allocator分配满了，会从`doing` ring queue中取一个空闲的striping_allocator，然后再分配hash entry空间。若所有striping_allocator都分配满了，则向OS申请一块新的setment。
+
+<img src="ring_queue.png"  width="50%" height="50%" alt="还在路上，稍等..."/>
+
+Hashtable的实现是正规的开链法。如下图所示，hash桶的个数是`context->memory->hashtable->capacity`，由配置`max_key_count`指定。
 <img src="buckets.png" width="60%" height="60%" alt="还在路上，稍等..."/>
 
-
-#### 2.get(key)操作
-
-
-
-#### 3.set(key,value)操作
+#### get(key)操作
 
 
 
-#### 4.delete(key)操作
+#### set(key,value)操作
 
 
 
-#### 5.如何保证一个写者多个读者同时进行时的无锁访问？
-
-
-#### 6.死锁检测
+#### delete(key)操作
 
 
 
-#### 7.异常处理
+#### 如何保证一个写者多个读者同时进行时的无锁访问？
 
 
-#### 8.一些疑问
+#### 死锁检测
+
+
+
+#### 异常处理
+
+
+#### 一些疑问
 1. 当回收了有效的(未过期)键值对时,休眠 定时 以避免其他进程读到脏数据。  
 这个特性没看到。
 
 2. 有时候会出现写数据不完整(一个进程写一部分数据后崩溃或被kill掉)的情况，这个时候怎么处理？
 直接把整个cache清除掉。因为是cache系统，不保证（承诺）数据持久化，所以万一出现这种bad case，只能把cache清空了。
 
-
-
 附：数据结构图
 ![数据结构图][2]
-
-
-
 
 [1]: https://github.com/happyfish100/libshmcache
 [2]: data_structure.jpeg
