@@ -16,9 +16,10 @@
 ### 阅读笔记
 
 #### 1.存储模型
-![segment][3]
-![ring_queue][4]
-![buckets][5]
+
+<img src="segment.png"  width="50%" height="50%" alt="还在路上，稍等..."/>
+<img src="ring_queue.png"  width="50%" height="50%" alt="还在路上，稍等..."/>
+<img src="buckets.png" width="50%" height="50%" alt="还在路上，稍等..."/>
 
 
 #### 2.get(key)操作
