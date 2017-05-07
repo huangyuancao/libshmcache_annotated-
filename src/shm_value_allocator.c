@@ -193,8 +193,8 @@ int shm_value_allocator_recycle(struct shmcache_context *context, struct shm_rec
         if (valid_count > 0)
         {
             recycle_stats->force++;
-            if (context->config.va_policy.
-                    sleep_us_when_recycle_valid_entries > 0)
+            //当回收了有效的(未过期)键值对时, 写进程sleep一段时间，以避免其他进程读到脏数据（读到新写的不完整的数据）。
+            if (context->config.va_policy.sleep_us_when_recycle_valid_entries > 0)
             {
                 usleep(context->config.va_policy.sleep_us_when_recycle_valid_entries);
             }

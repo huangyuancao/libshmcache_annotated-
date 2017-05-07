@@ -102,7 +102,7 @@ int shm_ht_set(struct shmcache_context *context, const struct shmcache_key_info 
         new_entry->ht_next = old_entry->ht_next;
         //这里会 真实清空old_entry的数据吗？如果是的话，另一个读者在读的时候，会产生错误！
         //不会真实清空，会循环利用striping_allocator空间.
-        //但会把entry->ht_next置为0。如果此时有一个读者在遍历链表，它的遍历过程会中断，导致后面节点的数据没读到????!!!!!
+        //但会把entry->ht_next置为0。如果此时有一个读者在遍历链表，它的遍历过程会中断，会导致后面节点的数据没读到?
         shm_ht_free_entry(context, old_entry, old_offset, &recycled);
     } else {
         new_entry->ht_next = 0;   //加入 作为链表的最后一个结点
