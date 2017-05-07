@@ -18,7 +18,8 @@
 #### 存储模型
 
 <img src="segment.png"  width="60%" height="60%" alt="还在路上，稍等..."/>
-程序是按segment（默认8M）为单位向OS申请共享内存。初始化时，会分配几个segment，然后将每个segment切分成多个striping_allocator空间（默认1M），由striping_allocator来分配单个的hash entry空间。    
+
+程序按segment（默认8M）为单位向OS申请共享内存。初始化时，会分配几个segment，然后将每个segment切分成多个striping_allocator空间（默认1M），由striping_allocator来分配单个的hash entry空间。  
 hash entry由`struct shm_hash_entry`表示，主要存储hash entry在striping_allocator中的偏移量（准确的说，是基于segment首地址的偏移量）。  
 所有striping_allocator对象由`shmcache_value_allocator_context`来管理，它由2个ring queue(`doing`, `done`)分别保存所有空闲的striping_allocator和已分配满的striping_allocator。如下图所示。  
 
