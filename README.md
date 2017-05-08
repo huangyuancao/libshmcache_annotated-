@@ -48,7 +48,7 @@ Hashtable使用是正规的开链法实现。如下图所示，hash桶的个数�
 1）在context中有个`struct shmcache_list list`链表，保存着shm中所有hash entry（在shm segment）的偏移量。  
 2）从前往后遍历链表中的结点，然后删除此hash entry、释放空间。  
 3）直到释放了`recycle_keys_once`个hash entry空间，或者释放了一个striping_allocator空间。  
-4）当回收了有效的(未过期)键值对时, 进程sleep一段时间，以避免其他进程读到脏数据（读到新写的不完整的数据）。  
+4）当回收了有效的(未过期)键值对时，进程sleep一段时间，以避免其他进程读到脏数据（读到新写的不完整的数据）。  
 
     PS: 为什么要按FIFO策略来淘汰hash entry，而不是LRU之类？  
 我猜想是为了释放一个striping_allocator对象的空间，而一个striping_allocator对象的空间是由连续的几个key entry来瓜分的，所以需要释放连续的hash entry。
@@ -59,7 +59,7 @@ Hashtable使用是正规的开链法实现。如下图所示，hash桶的个数�
 如果所有striping_allocator都分配满了，则启动淘汰策略（释放一些旧的hash entry空间），或者向OS申请一块新的shm segment空间。
 
 4. 从Hashtable中查询是否已存在这个key。（原来的key占用的空间记为`old_entry`）
-如果存在，则修改桶链表中`old_entry`前后结点的`next索引`，再释放`old_entry`空间。
+如果存在，则修改桶链表中`old_entry`前驱结点的`next索引`，再释放`old_entry`空间。
 如果不存在，则将`new_entry`插入作为桶链表的首结点。
 
 5. 将key/value值拷贝到`new_entry`空间中。如果没有冲突，修改`context->memory->hashtable.buckets`索引（存储桶链表首结点的偏移量）。如果有冲突，则链接到桶链表的最后一个结点中。
@@ -75,20 +75,25 @@ Hashtable使用是正规的开链法实现。如下图所示，hash桶的个数�
 
 #### 如何保证一个写者多个读者同时进行时的无锁访问？
 
+1. 当回收了有效的(未过期)键值对时，写进程sleep一段时间，以避免其他进程读到脏数据（读到新写的不完整的数据）。
+2. 把KV结构中的数据完全准备好后，才会挂到hashtabe的bucket链表中。
+3. 在桶链表中插入新结点时，将它链接作为**最后一个结点**。
 
+一种读者查询失败的场景：  
+在set(key,value)操作中，如果已存在这个key，需要将原来key的hash entry从桶链表中删除。在删除过程中，需要修改些entry结点的前驱结点的`next索引`，但如果此时正好有个读者读到这个结点，在遍历时，由于写进程已将原结点next指针置为NULL，导致后续的链表读不到了。
 
 #### 死锁检测
 
-
-
+采用pthread mutex互斥锁（跨进程的锁），在拿到锁后，记录当前进程的pid，即锁的owner进程pid。  
+加锁时采用trylock尝试加锁，如果没有拿到锁，则休眠N微秒后重新trylock。  
+如果达到deadlock检测阈值（比如1s）还没拿到锁，则启动deadlock检测。  
+检查持有锁的pid是否存活，如果该进程已经挂掉，则执行解锁操作，deadlock问题解决。  
 
 #### 异常处理
 
+1. 有时候会出现写数据不完整(一个进程写一部分数据后崩溃或被kill掉)、不一致的情况，这个怎么处理？
+直接把整个cache清除掉。因为是cache系统，不保证（承诺）数据持久化，所以万一出现这种bad case，就把cache清空了。
 
-
-#### 一些疑问
-1. 有时候会出现写数据不完整(一个进程写一部分数据后崩溃或被kill掉)的情况，这个时候怎么处理？
-直接把整个cache清除掉。因为是cache系统，不保证（承诺）数据持久化，所以万一出现这种bad case，只能把cache清空了。
 
 附：[数据结构图][2]
 
