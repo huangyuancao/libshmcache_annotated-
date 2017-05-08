@@ -19,20 +19,24 @@
 
 <img src="segment.png"  width="60%" height="60%" alt="还在路上，稍等..."/>
 
-程序按segment（默认8M）为单位向OS申请共享内存。初始化时，会分配几个segment，然后将每个segment切分成多个striping_allocator空间（默认1M），由striping_allocator来分配单个的hash entry空间。  
-hash entry由`struct shm_hash_entry`表示，主要存储hash entry在striping_allocator中的偏移量（准确的说，是基于segment首地址的偏移量）。  
+程序以segment（默认8M）为单位向OS申请共享内存。初始化时，会分配几个segment，然后将每个segment切分成多个striping_allocator空间（默认1M），由striping_allocator来分配单个的hash entry空间。  
+hash entry由`struct shm_hash_entry`表示，主要记录hash entry在striping_allocator中的偏移量（准确的说，是基于segment首地址的偏移量）。  
 所有striping_allocator对象由`shmcache_value_allocator_context`来管理，它由2个ring queue(`doing`, `done`)分别保存所有空闲的striping_allocator和已分配满的striping_allocator。如下图所示。  
 
 <img src="ring_queue.png"  width="50%" height="50%" alt="还在路上，稍等..."/>
 
 segment是按需分配的。在插入时，若当前striping_allocator分配满了，会从`doing` ring queue中取一个空闲的striping_allocator，然后再分配hash entry空间。若所有striping_allocator都分配满了，则向OS申请一块新的setment。    
-Hashtable的实现是正规的开链法。如下图所示，hash桶的个数是`context->memory->hashtable->capacity`，由配置`max_key_count`指定。  
+Hashtable使用是正规的开链法实现。如下图所示，hash桶的个数是`context->memory->hashtable->capacity`，由配置`max_key_count`指定。  
 
 <img src="buckets.png" width="50%" height="50%" alt="还在路上，稍等..."/>
 
 #### get(key)操作
 
+1. 根据key哈希计算得到bucket index。计算公式：`hash_func(key->data, key->length) % context->memory->hashtable.capacity`
 
+2. （从`context->memory->hashtable.buckets[bucket index]`）获取bucket index对应的桶链表首结点在shm segment中的偏移量，根据偏移量得到首结点在shm中的地址entry。
+
+3. 遍历桶链表，直到找到key相同且未过期的hash结点。
 
 #### set(key,value)操作
 
