@@ -28,7 +28,7 @@ hash entry由`struct shm_hash_entry`表示，主要存储hash entry在striping_a
 segment是按需分配的。在插入时，若当前striping_allocator分配满了，会从`doing` ring queue中取一个空闲的striping_allocator，然后再分配hash entry空间。若所有striping_allocator都分配满了，则向OS申请一块新的setment。    
 Hashtable的实现是正规的开链法。如下图所示，hash桶的个数是`context->memory->hashtable->capacity`，由配置`max_key_count`指定。  
 
-<img src="buckets.png" width="60%" height="60%" alt="还在路上，稍等..."/>
+<img src="buckets.png" width="50%" height="50%" alt="还在路上，稍等..."/>
 
 #### get(key)操作
 
@@ -53,17 +53,13 @@ Hashtable的实现是正规的开链法。如下图所示，hash桶的个数是`
 
 
 #### 一些疑问
-1. 当回收了有效的(未过期)键值对时,休眠 定时 以避免其他进程读到脏数据。  
-这个特性没看到。
-
-2. 有时候会出现写数据不完整(一个进程写一部分数据后崩溃或被kill掉)的情况，这个时候怎么处理？
+1. 有时候会出现写数据不完整(一个进程写一部分数据后崩溃或被kill掉)的情况，这个时候怎么处理？
 直接把整个cache清除掉。因为是cache系统，不保证（承诺）数据持久化，所以万一出现这种bad case，只能把cache清空了。
 
-附：数据结构图
-![数据结构图][2]
+附：[数据结构图][2]
 
 [1]: https://github.com/happyfish100/libshmcache
-[2]: data_structure.jpeg
+[2]: https://github.com/baozh/libshmcache_annotated/blob/master/data_structure.jpeg
 [3]: segment.png 
 [4]: ring_queue.png
 [5]: buckets.png
